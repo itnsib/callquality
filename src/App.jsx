@@ -136,21 +136,15 @@ ${tx}`;
       setTxText(transcript);
       setPct(65); setStatusMsg("Scoring call with Claude AI...");
 
-      // Step 2: Analyse with Claude
-      const cRes = await fetch("https://api.anthropic.com/v1/messages", {
+      // Step 2: Analyse via Netlify function (server-side Claude call)
+      const cRes = await fetch("/.netlify/functions/analyse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: CLAUDE_MODEL, max_tokens: 2000,
-          messages: [{ role: "user", content: buildPrompt(transcript) }],
-        }),
+        body: JSON.stringify({ transcript, agentName }),
       });
 
-      const cData = await cRes.json();
-      if (cData.error) throw new Error(cData.error.message);
-
-      const raw = cData.content[0].text.replace(/```json|```/g,"").trim();
-      const parsed = JSON.parse(raw);
+      const parsed = await cRes.json();
+      if (!cRes.ok || parsed.error) throw new Error(parsed.error || "Analysis failed");
       setPct(100);
       setResults(parsed);
       setStep("results");
